@@ -1,20 +1,33 @@
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("✅ Script connected!");
+  console.log("working");
 
-  const groupId = "36086667";
+  // ------------------ Hardcoded group info ------------------
+  const groupInfo = {
+    name: "Demo Roblox Group",
+    description: "This is a demo Roblox group description. Everything here is fully static and works on GitHub Pages.",
+    shout: "Welcome to our demo group shout!",
+    icon: "https://tr.rbxcdn.com/default.png",
+    banner: "https://tr.rbxcdn.com/default.png",
+    url: "https://www.roblox.com/groups/36086667"
+  };
 
-  let allMembers = [];
+  // Populate group info
+  document.getElementById("groupName").textContent = groupInfo.name;
+  document.getElementById("groupDesc").textContent = groupInfo.description;
+  document.getElementById("groupShout").textContent = groupInfo.shout;
+  document.getElementById("viewGroupBtn").href = groupInfo.url;
+  document.getElementById("groupIcon").src = groupInfo.icon;
+  document.getElementById("groupBanner").style.backgroundImage = `url(${groupInfo.banner})`;
 
   // ------------------ Demo members ------------------
-  const demoMembers = [
-    { username: "DemoUser1", role: "Owner", avatar: "https://tr.rbxcdn.com/30DAY-Avatar-Headshot-420x420.png" },
-    { username: "DemoUser2", role: "Admin", avatar: "https://tr.rbxcdn.com/AvatarHeadshot-150x150.png" },
-    { username: "DemoUser3", role: "Member", avatar: "https://tr.rbxcdn.com/default.png" },
-    { username: "DemoUser4", role: "Member", avatar: "https://tr.rbxcdn.com/AvatarHeadshot-150x150.png" },
-    { username: "DemoUser5", role: "Admin", avatar: "https://tr.rbxcdn.com/30DAY-Avatar-Headshot-420x420.png" },
+  const allMembers = [
+    { username: "DemoOwner", role: "Owner", avatar: "https://tr.rbxcdn.com/30DAY-Avatar-Headshot-420x420.png" },
+    { username: "DemoAdmin1", role: "Admin", avatar: "https://tr.rbxcdn.com/AvatarHeadshot-150x150.png" },
+    { username: "DemoAdmin2", role: "Admin", avatar: "https://tr.rbxcdn.com/AvatarHeadshot-150x150.png" },
+    { username: "DemoMember1", role: "Member", avatar: "https://tr.rbxcdn.com/default.png" },
+    { username: "DemoMember2", role: "Member", avatar: "https://tr.rbxcdn.com/default.png" },
+    { username: "DemoMember3", role: "Member", avatar: "https://tr.rbxcdn.com/default.png" }
   ];
-
-  allMembers = demoMembers;
 
   // ------------------ Display members ------------------
   function displayMembers(members) {
@@ -36,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ------------------ Filters ------------------
+  // ------------------ Role filter ------------------
   const roleFilter = document.getElementById("roleFilter");
   roleFilter.innerHTML = '<option value="all">All Roles</option>';
   [...new Set(allMembers.map(m => m.role))].forEach(role => {
@@ -82,41 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ------------------ Load group info ------------------
-  async function loadGroupInfo() {
-    const groupNameEl = document.getElementById("groupName");
-    const groupDescEl = document.getElementById("groupDesc");
-    const groupShoutEl = document.getElementById("groupShout");
-    const groupIconEl = document.getElementById("groupIcon");
-    const groupBannerEl = document.getElementById("groupBanner");
-    const viewGroupBtn = document.getElementById("viewGroupBtn");
-
-    try {
-      const res = await fetch(`https://groups.roblox.com/v1/groups/${groupId}`);
-      const data = await res.json();
-
-      groupNameEl.textContent = data.name;
-      groupDescEl.textContent = data.description;
-      groupShoutEl.textContent = data.shout?.body || "No group shout at the moment.";
-      viewGroupBtn.href = `https://www.roblox.com/groups/${groupId}`;
-
-      // Load icon
-      const iconRes = await fetch(`https://thumbnails.roblox.com/v1/groups/icons?groupIds=${groupId}&size=150x150&format=Png`);
-      const iconData = await iconRes.json();
-      const iconUrl = iconData.data?.[0]?.imageUrl;
-      if (iconUrl) {
-        groupIconEl.src = iconUrl;
-        groupBannerEl.style.backgroundImage = `url(${iconUrl})`;
-      }
-    } catch (err) {
-      console.error("Error loading group info:", err);
-      groupNameEl.textContent = "Error loading group info";
-      groupDescEl.textContent = "";
-      groupShoutEl.textContent = "";
-    }
-  }
-
   // ------------------ Init ------------------
   displayMembers(allMembers);
-  loadGroupInfo();
 });
