@@ -1,16 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Roblox Group Hub</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roblox Group Hub</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1 id="groupName">Loading group...</h1>
-  <p id="groupDesc"></p>
-  <h3>Group Shout:</h3>
-  <p id="groupShout"></p>
+  <header>
+    <h1 id="groupName">Loading group...</h1>
+    <p id="groupDesc">Please wait while we fetch your group info.</p>
+  </header>
+
+  <section class="shout">
+    <h2>📢 Group Shout</h2>
+    <p id="groupShout">Fetching shout...</p>
+  </section>
+
+  <footer>
+    <p>Powered by Roblox Public API | Hosted on GitHub Pages</p>
+  </footer>
 
   <script src="script.js"></script>
 </body>
