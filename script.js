@@ -1,25 +1,37 @@
 const groupId = "36086667";
-const corsProxy = "https://corsproxy.io/?";
+const proxy = "https://api.allorigins.win/get?url=";
+let allMembers = [];
+let allRoles = [];
+
+async function fetchViaProxy(url) {
+  const res = await fetch(proxy + encodeURIComponent(url));
+  const data = await res.json();
+  return JSON.parse(data.contents);
+}
 
 async function loadGroupData() {
+  toggleLoader(true);
   try {
-    const res = await fetch(`${corsProxy}https://groups.roblox.com/v1/groups/${groupId}`);
-    const data = await res.json();
-
+    const data = await fetchViaProxy(`https://groups.roblox.com/v1/groups/${groupId}`);
     document.getElementById("groupName").textContent = data.name;
     document.getElementById("groupDesc").textContent = data.description;
+    document.getElementById("viewGroupBtn").href = `https://www.roblox.com/groups/${groupId}`;
+    document.getElementById("groupShout").textContent = data.shout?.body || "No group shout at the moment.";
 
-    if (data.shout && data.shout.body) {
-      document.getElementById("groupShout").textContent = data.shout.body;
-    } else {
-      document.getElementById("groupShout").textContent = "No group shout at the moment.";
+    const iconData = await fetchViaProxy(`https://thumbnails.roblox.com/v1/groups/icons?groupIds=${groupId}&size=150x150&format=Png`);
+    const iconUrl = iconData.data?.[0]?.imageUrl;
+    if (iconUrl) {
+      document.getElementById("groupIcon").src = iconUrl;
+      const banner = document.getElementById("groupBanner");
+      banner.style.backgroundImage = `url(${iconUrl})`;
     }
 
-    loadMembers(); // Load members after group info
+    await loadMembers();
   } catch (err) {
     document.getElementById("groupName").textContent = "Error loading group data";
     console.error("Failed to fetch group info:", err);
   }
+  toggleLoader(false);
 }
 
 async function loadMembers() {
@@ -27,47 +39,97 @@ async function loadMembers() {
   memberList.innerHTML = "<p>Loading members...</p>";
 
   try {
-    // Get group roles first
-    const rolesRes = await fetch(`${corsProxy}https://groups.roblox.com/v1/groups/${groupId}/roles`);
-    const rolesData = await rolesRes.json();
+    const rolesData = await fetchViaProxy(`https://groups.roblox.com/v1/groups/${groupId}/roles`);
+    allRoles = rolesData.roles;
+    const roleFilter = document.getElementById("roleFilter");
+    allRoles.forEach(role => {
+      const opt = document.createElement("option");
+      opt.value = role.name;
+      opt.textContent = role.name;
+      roleFilter.appendChild(opt);
+    });
 
     const members = [];
-
-    // Loop through each role and get members
-    for (const role of rolesData.roles) {
-      const roleRes = await fetch(`${corsProxy}https://groups.roblox.com/v1/groups/${groupId}/roles/${role.id}/users?limit=5`);
-      const roleData = await roleRes.json();
-
-      roleData.data.forEach(user => {
-        members.push({
-          username: user.username,
-          userId: user.userId,
-          roleName: role.name
-        });
-      });
+    for (const role of allRoles) {
+      const roleData = await fetchViaProxy(`https://groups.roblox.com/v1/groups/${groupId}/roles/${role.id}/users?limit=10`);
+      roleData.data.forEach(u => members.push({ username: u.username, userId: u.userId, role: role.name }));
     }
 
-    // Display members
-    memberList.innerHTML = "";
-    for (const member of members) {
-      const thumbRes = await fetch(`${corsProxy}https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${member.userId}&size=100x100&format=Png&isCircular=true`);
-      const thumbData = await thumbRes.json();
-      const avatar = thumbData.data[0].imageUrl;
+    const ids = members.map(m => m.userId).join(",");
+    const thumbs = await fetchViaProxy(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${ids}&size=100x100&format=Png&isCircular=true`);
+    const thumbMap = {};
+    thumbs.data.forEach(t => { thumbMap[t.targetId] = t.imageUrl; });
 
-      const card = document.createElement("div");
-      card.classList.add("member-card");
-      card.innerHTML = `
-        <img src="${avatar}" alt="${member.username}" />
-        <h4>${member.username}</h4>
-        <p>${member.roleName}</p>
-      `;
-      memberList.appendChild(card);
-    }
-
+    allMembers = members.map(m => ({ ...m, avatar: thumbMap[m.userId] }));
+    displayMembers(allMembers);
   } catch (err) {
     console.error("Error loading members:", err);
     memberList.innerHTML = "<p>Failed to load members.</p>";
   }
 }
+
+function displayMembers(members) {
+  const memberList = document.getElementById("memberList");
+  memberList.innerHTML = "";
+  if (!members.length) {
+    memberList.innerHTML = "<p>No members found.</p>";
+    return;
+  }
+  members.forEach(member => {
+    const card = document.createElement("div");
+    card.classList.add("member-card");
+    card.innerHTML = `
+      <img src="${member.avatar}" alt="${member.username}" />
+      <h4>${member.username}</h4>
+      <p>${member.role}</p>
+    `;
+    memberList.appendChild(card);
+  });
+}
+
+document.getElementById("searchBox").addEventListener("input", applyFilters);
+document.getElementById("roleFilter").addEventListener("change", applyFilters);
+
+function applyFilters() {
+  const search = document.getElementById("searchBox").value.toLowerCase();
+  const role = document.getElementById("roleFilter").value;
+  const filtered = allMembers.filter(m =>
+    (role === "all" || m.role === role) &&
+    m.username.toLowerCase().includes(search)
+  );
+  displayMembers(filtered);
+}
+
+// Theme toggle
+const themeToggle = document.getElementById("themeToggle");
+themeToggle.addEventListener("click", toggleTheme);
+
+function toggleTheme() {
+  document.body.classList.toggle("dark");
+  const isDark = document.body.classList.contains("dark");
+  themeToggle.textContent = isDark ? "☀️" : "🌙";
+  localStorage.setItem("theme", isDark ? "dark" : "light");
+}
+
+(function loadTheme() {
+  const saved = localStorage.getItem("theme");
+  if (saved === "dark") {
+    document.body.classList.add("dark");
+    themeToggle.textContent = "☀️";
+  }
+})();
+
+function toggleLoader(show) {
+  document.getElementById("loader").style.display = show ? "block" : "none";
+}
+
+// Collapsible
+document.querySelectorAll(".collapse-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    const content = btn.nextElementSibling;
+    btn.classList.toggle("active");
+    content.classList.toggle("open");
+  });
+});
 
 loadGroupData();
